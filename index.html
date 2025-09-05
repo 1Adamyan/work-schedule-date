@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lily工作室档期表</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #7f8c8d;
+            font-weight: normal;
+            font-size: 18px;
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+            padding: 25px;
+            background: #ecf0f1;
+            border-radius: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            margin-bottom: 10px;
+            font-weight: 500;
+            font-size: 16px;
+        }
+        
+        select, input, button {
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .btn-add {
+            background: #2ecc71;
+        }
+        
+        .btn-add:hover {
+            background: #27ae60;
+        }
+        
+        .btn-clear {
+            background: #e74c3c;
+        }
+        
+        .btn-clear:hover {
+            background: #c0392b;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            align-items: center;
+            padding: 18px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            font-size: 15px;
+            min-width: 120px;
+        }
+        
+        th {
+            background-color: #2c3e50;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+        }
+        
+        .time-cell {
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+            min-width: 100px;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+        }
+        
+        .date-cell {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            min-width: 100px;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        
+        .schedule-item {
+            padding: 10px;
+            margin: 3px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .schedule-item:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        
+        .empty-cell {
+            background-color: #f9f9f9;
+            min-height: 50px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            grid-column: 1 / -1;
+            margin-top: 15px;
+        }
+        
+        .action-buttons button {
+            flex: 1;
+            padding: 15px;
+        }
+        
+        .time-range-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .date-select-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .custom-site-input {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .custom-site-input.visible {
+            display: block;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        .loading.visible {
+            display: block;
+        }
+        
+        @media (max-width: 1200px) {
+            .input-section {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .time-range-group, .date-select-group {
+                grid-column: 1 / -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+                font-size: 14px;
+                min-width: 100px;
+            }
+            
+            .time-range-group, .date-select-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .input-section {
+                padding: 18px;
+            }
+            
+            .schedule-item {
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+        
+        /* 为不同工作地点设置颜色 */
+        .color-EQ { background-color: #FF6B6B; }
+        .color-大饼 { background-color: #4ECDC4; }
+        .color-帝国 { background-color: #FFD166; color: #333; }
+        .color-FACE { background-color: #6A0572; }
+        .color-伊顿 { background-color: #06D6A0; }
+        .color-粉红清真寺 { background-color: #FF9EBC; color: #333; }
+        .color-麦麦街 { background-color: #118AB2; }
+        .color-独立广场 { background-color: #073B4C; }
+        .color-其他 { background-color: #9E9E9E; }
+        .color-自定义 { background-color: #FF9800; }
+        
+        .color-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 25px;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .color-box {
+            width: 25px;
+            height: 25px;
+            borderRadius: 5px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lily工作室档期表</h1>
+        <p class="subtitle">档期安排 - 时间: 13:00 - 24:00 (半小时分段)</p>
+        
+        <div class="loading" id="loading">页面加载中...</div>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="site-select">选择工作地点：</label>
+                <select id="site-select">
+                    <option value="EQ">EQ</option>
+                    <option value="大饼">大饼</option>
+                    <option value="帝国">帝国</option>
+                    <option value="FACE">FACE</option>
+                    <option value="伊顿">伊顿</option>
+                    <option value="粉红清真寺">粉红清真寺</option>
+                    <option value="麦麦街">麦麦街</option>
+                    <option value="独立广场">独立广场</option>
+                    <option value="其他">其他</option>
+                    <option value="自定义">自定义工作地点...</option>
+                </select>
+                <input type="text" id="custom-site-input" class="custom-site-input" placeholder="请输入工作地点名称">
+            </div>
+            
+            <div class="input-group date-select-group">
+                <div>
+                    <label for="year-select-input">选择年份：</label>
+                    <select id="year-select-input"></select>
+                </div>
+                <div>
+                    <label for="month-select-input">选择月份：</label>
+                    <select id="month-select-input">
+                        <option value="0">一月</option>
+                        <option value="1">二月</option>
+                        <option value="2">三月</option>
+                        <option value="3">四月</option>
+                        <option value="4">五月</option>
+                        <option value="5">六月</option>
+                        <option value="6">七月</option>
+                        <option value="7">八月</option>
+                        <option value="8">九月</option>
+                        <option value="9">十月</option>
+                        <option value="10">十一月</option>
+                        <option value="11">十二月</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="day-select-input">选择日期：</label>
+                    <select id="day-select-input"></select>
+                </div>
+            </div>
+            
+            <div class="input-group time-range-group">
+                <div>
+                    <label for="start-time">开始时间：</label>
+                    <select id="start-time"></select>
+                </div>
+                <div>
+                    <label for="end-time">结束时间：</label>
+                    <select id="end-time"></select>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label for="client-input">客户名称：</label>
+                <input type="text" id="client-input" placeholder="输入客户名称">
+            </div>
+            
+            <div class="action-buttons">
+                <button id="add-btn" class="btn-add">添加档期</button>
+                <button id="clear-btn" class="btn-clear">清除所有</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div>
+                <label for="month-select">表格月份：</label>
+                <select id="month-select">
+                    <option value="0">一月</option>
+                    <option value="1">二月</option>
+                    <option value="2">三月</option>
+                    <option value="3">四月</option>
+                    <option value="4">五月</option>
+                    <option value="5">六月</option>
+                    <option value="6">七月</option>
+                    <option value="7">八月</option>
+                    <option value="8">九月</option>
+                    <option value="9">十月</option>
+                    <option value="10">十一月</option>
+                    <option value="11">十二月</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="year-select">表格年份：</label>
+                <select id="year-select"></select>
+            </div>
+            
+            <button id="save-btn">保存档期</button>
+        </div>
+        
+        <div class="table-container">
+            <table id="schedule-table">
+                <!-- 表格内容由JavaScript生成 -->
+            </table>
+        </div>
+        
+        <div class="color-legend">
+            <h3 style="grid-column: 1 / -1; margin-bottom: 15px;">工作地点颜色图例：</h3>
+            <!-- 图例内容由JavaScript生成 -->
+        </div>
+    </div>
+    
+    <footer>
+        <p>Lily工作室档期表 &copy; 2023 - 点击档期项可删除</p>
+    </footer>
+
+    <script>
+        // 显示加载状态
+        document.getElementById('loading').classList.add('visible');
+        
+        // 确保DOM完全加载后再执行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            // DOM已经加载完成，直接初始化
+            setTimeout(initApp, 100);
+        }
+        
+        function initApp() {
+            try {
+                // 配置数据
+                const config = {
+                    sites: ['EQ', '大饼', '帝国', 'FACE', '伊顿', '粉红清真寺', '麦麦街', '独立广场', '其他', '自定义'],
+                    colors: {
+                        'EQ': '#FF6B6B',
+                        '大饼': '#4ECDC4',
+                        '帝国': '#FFD166',
+                        'FACE': '#6A0572',
+                        '伊顿': '#06D6A0',
+                        '粉红清真寺': '#FF9EBC',
+                        '麦麦街': '#118AB2',
+                        '独立广场': '#073B4C',
+                        '其他': '#9E9E9E',
+                        '自定义': '#FF9800'
+                    }
+                };
+                
+                const siteSelect = document.getElementById('site-select');
+                const customSiteInput = document.getElementById('custom-site-input');
+                const yearSelectInput = document.getElementById('year-select-input');
+                const monthSelectInput = document.getElementById('month-select-input');
+                const daySelectInput = document.getElementById('day-select-input');
+                const startTimeSelect = document.getElementById('start-time');
+                const endTimeSelect = document.getElementById('end-time');
+                const clientInput = document.getElementById('client-input');
+                const addBtn = document.getElementById('add-btn');
+                const clearBtn = document.getElementById('clear-btn');
+                const monthSelect = document.getElementById('month-select');
+                const yearSelect = document.getElementById('year-select');
+                const saveBtn = document.getElementById('save-btn');
+                const scheduleTable = document.getElementById('schedule-table');
+                const colorLegend = document.querySelector('.color-legend');
+                const loadingElement = document.getElementById('loading');
+                
+                let currentDate = new Date();
+                let scheduleData = [];
+                let customSites = [];
+                
+                // 初始化时间选择器选项
+                function initTimeSelects() {
+                    try {
+                        startTimeSelect.innerHTML = '';
+                        endTimeSelect.innerHTML = '';
+                        
+                        const timeOptions = [];
+                        
+                        for (let hour = 13; hour < 24; hour++) {
+                            for (let minute = 0; minute < 60; minute += 30) {
+                                const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                timeOptions.push(timeValue);
+                            }
+                        }
+                        
+                        timeOptions.push('24:00');
+                        
+                        timeOptions.forEach(time => {
+                            const option = document.createElement('option');
+                            option.value = time;
+                            option.textContent = time;
+                            startTimeSelect.appendChild(option);
+                        });
+                        
+                        updateEndTimeOptions();
+                        startTimeSelect.addEventListener('change', updateEndTimeOptions);
+                    } catch (error) {
+                        console.error('初始化时间选择器失败:', error);
+                    }
+                }
+                
+                // 初始化年份选择器
+                function initYearSelects() {
+                    try {
+                        yearSelectInput.innerHTML = '';
+                        yearSelect.innerHTML = '';
+                        
+                        const currentYear = currentDate.getFullYear();
+                        for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+                            const option1 = document.createElement('option');
+                            option1.value = i;
+                            option1.textContent = i + '年';
+                            if (i === currentYear) option1.selected = true;
+                            yearSelectInput.appendChild(option1);
+                            
+                            const option2 = document.createElement('option');
+                            option2.value = i;
+                            option2.textContent = i + '年';
+                            if (i === currentYear) option2.selected = true;
+                            yearSelect.appendChild(option2);
+                        }
+                    } catch (error) {
+                        console.error('初始化年份选择器失败:', error);
+                    }
+                }
+                
+                // 初始化月份选择器
+                function initMonthSelectInput() {
+                    try {
+                        monthSelectInput.value = currentDate.getMonth();
+                    } catch (error) {
+                        console.error('初始化月份选择器失败:', error);
+                    }
+                }
+                
+                // 更新日期选择器选项
+                function updateDaySelectOptions() {
+                    try {
+                        const year = parseInt(yearSelectInput.value);
+                        const month = parseInt(monthSelectInput.value);
+                        
+                        daySelectInput.innerHTML = '';
+                        
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        
+                        for (let day = 1; day <= daysInMonth; day++) {
+                            const option = document.createElement('option');
+                            option.value = day;
+                            option.textContent = day + '日';
+                            daySelectInput.appendChild(option);
+                        }
+                        
+                        const currentDay = currentDate.getDate();
+                        if (currentDay <= daysInMonth) {
+                            daySelectInput.value = currentDay;
+                        } else {
+                            daySelectInput.value = 1;
+                        }
+                    } catch (error) {
+                        console.error('更新日期选择器失败:', error);
+                    }
+                }
+                
+                // 处理工作地点选择变化
+                function handleSiteSelectChange() {
+                    if (siteSelect.value === '自定义') {
+                        customSiteInput.classList.add('visible');
+                    } else {
+                        customSiteInput.classList.remove('visible');
+                    }
+                }
+                
+                // 获取当前选择的工作地点
+                function getSelectedSite() {
+                    if (siteSelect.value === '自定义') {
+                        return customSiteInput.value.trim() || '自定义地点';
+                    }
+                    return siteSelect.value;
+                }
+                
+                // 获取当前选择的完整日期
+                function getSelectedDate() {
+                    const year = parseInt(yearSelectInput.value);
+                    const month = parseInt(monthSelectInput.value);
+                    const day = parseInt(daySelectInput.value);
+                    
+                    return new Date(year, month, day);
+                }
+                
+                // 格式化日期
+                function formatDate(date) {
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                
+                // 更新结束时间选项
+                function updateEndTimeOptions() {
+                    try {
+                        const startTime = startTimeSelect.value;
+                        const timeOptions = [];
+                        
+                        let addOptions = false;
+                        
+                        for (let hour = 13; hour < 24; hour++) {
+                            for (let minute = 0; minute < 60; minute += 30) {
+                                const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                
+                                if (timeValue === startTime) {
+                                    addOptions = true;
+                                    continue;
+                                }
+                                
+                                if (addOptions) {
+                                    timeOptions.push(timeValue);
+                                }
+                            }
+                        }
+                        
+                        if (addOptions) {
+                            timeOptions.push('24:00');
+                        }
+                        
+                        endTimeSelect.innerHTML = '';
+                        timeOptions.forEach(time => {
+                            const option = document.createElement('option');
+                            option.value = time;
+                            option.textContent = time;
+                            endTimeSelect.appendChild(option);
+                        });
+                        
+                        if (timeOptions.length > 0) {
+                            endTimeSelect.value = timeOptions[0];
+                        }
+                    } catch (error) {
+                        console.error('更新结束时间选项失败:', error);
+                    }
+                }
+                
+                // 初始化颜色图例
+                function initColorLegend() {
+                    try {
+                        config.sites.forEach(site => {
+                            const colorItem = document.createElement('div');
+                            colorItem.className = 'color-item';
+                            
+                            const colorBox = document.createElement('div');
+                            colorBox.className = 'color-box';
+                            colorBox.style.backgroundColor = config.colors[site];
+                            colorBox.style.borderRadius = '5px';
+                            
+                            const label = document.createElement('span');
+                            label.textContent = site;
+                            
+                            colorItem.appendChild(colorBox);
+                            colorItem.appendChild(label);
+                            colorLegend.appendChild(colorItem);
+                        });
+                    } catch (error) {
+                        console.error('初始化颜色图例失败:', error);
+                    }
+                }
+                
+                // 生成月历表
+                function generateCalendar() {
+                    try {
+                        const month = parseInt(monthSelect.value);
+                        const year = parseInt(yearSelect.value);
+                        
+                        scheduleTable.innerHTML = '';
+                        
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        
+                        const headerRow = document.createElement('tr');
+                        const timeHeader = document.createElement('th');
+                        timeHeader.textContent = "时间/日期";
+                        headerRow.appendChild(timeHeader);
+                        
+                        for (let day = 1; day <= daysInMonth; day++) {
+                            const dateCell = document.createElement('th');
+                            dateCell.className = 'date-cell';
+                            dateCell.textContent = `${day}日`;
+                            dateCell.dataset.day = day;
+                            headerRow.appendChild(dateCell);
+                        }
+                        
+                        scheduleTable.appendChild(headerRow);
+                        
+                        for (let hour = 13; hour < 24; hour++) {
+                            for (let minute = 0; minute < 60; minute += 30) {
+                                const row = document.createElement('tr');
+                                
+                                const timeCell = document.createElement('td');
+                                timeCell.className = 'time-cell';
+                                timeCell.textContent = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                timeCell.dataset.time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                row.appendChild(timeCell);
+                                
+                                for (let day = 1; day <= daysInMonth; day++) {
+                                    const cell = document.createElement('td');
+                                    cell.className = 'empty-cell';
+                                    cell.dataset.day = day;
+                                    cell.dataset.time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                    row.appendChild(cell);
+                                }
+                                
+                                scheduleTable.appendChild(row);
+                            }
+                        }
+                        
+                        const midnightRow = document.createElement('tr');
+                        const midnightTimeCell = document.createElement('td');
+                        midnightTimeCell.className = 'time-cell';
+                        midnightTimeCell.textContent = '24:00';
+                        midnightTimeCell.dataset.time = '24:00';
+                        midnightRow.appendChild(midnightTimeCell);
+                        
+                        for (let day = 1; day <= daysInMonth; day++) {
+                            const cell = document.createElement('td');
+                            cell.className = 'empty-cell';
+                            cell.dataset.day = day;
+                            cell.dataset.time = '24:00';
+                            midnightRow.appendChild(cell);
+                        }
+                        
+                        scheduleTable.appendChild(midnightRow);
+                        
+                        renderScheduleItems();
+                    } catch (error) {
+                        console.error('生成日历失败:', error);
+                    }
+                }
+                
+                // 渲染计划项到表格
+                function renderScheduleItems() {
+                    try {
+                        document.querySelectorAll('.schedule-item').forEach(item => item.remove());
+                        
+                        scheduleData.forEach(item => {
+                            const date = new Date(item.date);
+                            const year = date.getFullYear();
+                            const month = date.getMonth();
+                            const day = date.getDate();
+                            
+                            if (year === parseInt(yearSelect.value) && month === parseInt(monthSelect.value)) {
+                                const timeSlots = getTimeSlots(item.startTime, item.endTime);
+                                
+                                timeSlots.forEach(time => {
+                                    const cell = findCell(day, time);
+                                    if (cell) {
+                                        const scheduleItem = createScheduleItem(item);
+                                        cell.appendChild(scheduleItem);
+                                        cell.classList.remove('empty-cell');
+                                    }
+                                });
+                            }
+                        });
+                    } catch (error) {
+                        console.error('渲染计划项失败:', error);
+                    }
+                }
+                
+                // 获取时间段内的所有时间点
+                function getTimeSlots(startTime, endTime) {
+                    const slots = [];
+                    let currentTime = startTime;
+                    
+                    while (currentTime !== endTime) {
+                        slots.push(currentTime);
+                        
+                        if (currentTime === '24:00') break;
+                        
+                        const [hours, minutes] = currentTime.split(':').map(Number);
+                        let nextHours = hours;
+                        let nextMinutes = minutes + 30;
+                        
+                        if (nextMinutes === 60) {
+                            nextHours++;
+                            nextMinutes = 0;
+                        }
+                        
+                        if (nextHours === 24) {
+                            currentTime = '24:00';
+                        } else {
+                            currentTime = `${nextHours.toString().padStart(2, '0')}:${nextMinutes.toString().padStart(2, '0')}`;
+                        }
+                        
+                        if (slots.length > 50) break;
+                    }
+                    
+                    return slots;
+                }
+                
+                // 根据日期和时间查找单元格
+                function findCell(day, time) {
+                    const cells = document.querySelectorAll(`td[data-day="${day}"]`);
+                    for (const cell of cells) {
+                        if (cell.dataset.time === time) {
+                            return cell;
+                        }
+                    }
+                    return null;
+                }
+                
+                // 创建计划项元素
+                function createScheduleItem(item) {
+                    const div = document.createElement('div');
+                    const siteClass = config.colors[item.site] ? `color-${item.site}` : 'color-自定义';
+                    div.className = `schedule-item ${siteClass}`;
+                    div.dataset.id = item.id;
+                    
+                    const displayText = item.client ? `${item.site}-${item.client}` : item.site;
+                    div.textContent = displayText;
+                    div.title = displayText;
+                    
+                    div.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (confirm('是否要删除这个档期项？')) {
+                            deleteScheduleItem(item.id);
+                        }
+                    });
+                    
+                    return div;
+                }
+                
+                // 添加计划项
+                function addScheduleItem() {
+                    try {
+                        const site = getSelectedSite();
+                        const date = formatDate(getSelectedDate());
+                        const startTime = startTimeSelect.value;
+                        const endTime = endTimeSelect.value;
+                        const client = clientInput.value.trim();
+                        
+                        if (!site || !date || !startTime || !endTime) {
+                            alert('请填写完整的档期信息！');
+                            return;
+                        }
+                        
+                        if (startTime >= endTime) {
+                            alert('结束时间必须晚于开始时间！');
+                            return;
+                        }
+                        
+                        if (siteSelect.value === '自定义' && !customSites.includes(site)) {
+                            customSites.push(site);
+                        }
+                        
+                        const newItem = {
+                            id: Date.now(),
+                            site,
+                            date,
+                            startTime,
+                            endTime,
+                            client
+                        };
+                        
+                        scheduleData.push(newItem);
+                        renderScheduleItems();
+                        
+                        if (siteSelect.value === '自定义') {
+                            customSiteInput.value = '';
+                            customSiteInput.classList.remove('visible');
+                            siteSelect.value = 'EQ';
+                        }
+                        
+                        clientInput.value = '';
+                    } catch (error) {
+                        console.error('添加计划项失败:', error);
+                        alert('添加计划项时发生错误，请重试。');
+                    }
+                }
+                
+                // 删除计划项
+                function deleteScheduleItem(id) {
+                    scheduleData = scheduleData.filter(item => item.id !== id);
+                    renderScheduleItems();
+                }
+                
+                // 保存数据到本地存储
+                function saveData() {
+                    try {
+                        const dataToSave = {
+                            scheduleData: scheduleData,
+                            customSites: customSites
+                        };
+                        localStorage.setItem('lilyScheduleData', JSON.stringify(dataToSave));
+                        alert('档期已保存！');
+                    } catch (error) {
+                        console.error('保存数据失败:', error);
+                        alert('保存数据时发生错误，请重试。');
+                    }
+                }
+                
+                // 清除所有数据
+                function clearAllData() {
+                    if (confirm('确定要清除所有数据吗？此操作不可撤销。')) {
+                        scheduleData = [];
+                        customSites = [];
+                        localStorage.removeItem('lilyScheduleData');
+                        generateCalendar();
+                        alert('所有数据已清除！');
+                    }
+                }
+                
+                // 从本地存储加载数据
+                function loadData() {
+                    try {
+                        const savedData = localStorage.getItem('lilyScheduleData');
+                        if (savedData) {
+                            const parsedData = JSON.parse(savedData);
+                            scheduleData = parsedData.scheduleData || [];
+                            customSites = parsedData.customSites || [];
+                        }
+                    } catch (error) {
+                        console.error('加载数据失败:', error);
+                        scheduleData = [];
+                        customSites = [];
+                    }
+                }
+                
+                // 初始化事件监听
+                function initEventListeners() {
+                    siteSelect.addEventListener('change', handleSiteSelectChange);
+                    yearSelectInput.addEventListener('change', updateDaySelectOptions);
+                    monthSelectInput.addEventListener('change', updateDaySelectOptions);
+                    monthSelect.addEventListener('change', generateCalendar);
+                    yearSelect.addEventListener('change', generateCalendar);
+                    addBtn.addEventListener('click', addScheduleItem);
+                    saveBtn.addEventListener('click', saveData);
+                    clearBtn.addEventListener('click', clearAllData);
+                }
+                
+                // 主初始化函数
+                function mainInit() {
+                    initTimeSelects();
+                    initYearSelects();
+                    initMonthSelectInput();
+                    updateDaySelectOptions();
+                    initColorLegend();
+                    loadData();
+                    initEventListeners();
+                    
+                    monthSelect.value = currentDate.getMonth();
+                    generateCalendar();
+                    
+                    // 隐藏加载提示
+                    if (loadingElement) {
+                        loadingElement.classList.remove('visible');
+                    }
+                }
+                
+                // 执行主初始化
+                mainInit();
+                
+            } catch (error) {
+                console.error('应用初始化失败:', error);
+                if (loadingElement) {
+                    loadingElement.textContent = '页面加载失败，请刷新重试';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
